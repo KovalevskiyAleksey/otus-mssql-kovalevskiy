@@ -70,6 +70,7 @@ WHERE		o.[SupplierID] IS NULL
 DECLARE		@pagesize		int = 100
 			,@pagenum		int = 11
 
+/*
 SELECT		o.[OrderID]
 			,CONVERT(nvarchar(10), o.[OrderDate], 104) AS [OrderDate]
 			,DATENAME(MONTH, o.[OrderDate]) AS [MonthName]
@@ -79,6 +80,22 @@ SELECT		o.[OrderID]
 FROM		[Sales].[Orders] AS o
 			LEFT JOIN [Sales].[Customers] AS c ON c.[CustomerID] = o.[CustomerID]
 WHERE		o.[OrderID] IN (SELECT DISTINCT [OrderID] FROM [Sales].[OrderLines] WHERE [PickingCompletedWhen] IS NOT NULL AND ([UnitPrice] > 100 OR [Quantity] > 20))
+ORDER BY	DATEPART(QUARTER, o.[OrderDate]), CEILING(CAST(MONTH(o.[OrderDate]) AS float) * 3 / 12), o.[OrderDate]
+			OFFSET (@pagenum - 1) * @pagesize ROWS FETCH FIRST @pagesize ROWS ONLY
+*/
+
+SELECT		o.[OrderID]
+			,CONVERT(nvarchar(10), o.[OrderDate], 104) AS [OrderDate]
+			,DATENAME(MONTH, o.[OrderDate]) AS [MonthName]
+			,DATEPART(QUARTER, o.[OrderDate]) AS [QuarterNumber]
+			,CEILING(CAST(MONTH(o.[OrderDate]) AS float) * 3 / 12) AS [ThirdNumber]
+			,c.[CustomerName]
+FROM		[Sales].[Orders] AS o
+			LEFT JOIN [Sales].[OrderLines] AS l ON l.[OrderID] = o.[OrderID]
+			LEFT JOIN [Sales].[Customers] AS c ON c.[CustomerID] = o.[CustomerID]
+WHERE		l.[PickingCompletedWhen] IS NOT NULL
+			AND (l.[UnitPrice] > 100 OR l.[Quantity] > 20)
+GROUP BY	o.[OrderID], o.[OrderDate], c.[CustomerName]
 ORDER BY	DATEPART(QUARTER, o.[OrderDate]), CEILING(CAST(MONTH(o.[OrderDate]) AS float) * 3 / 12), o.[OrderDate]
 			OFFSET (@pagenum - 1) * @pagesize ROWS FETCH FIRST @pagesize ROWS ONLY
 
